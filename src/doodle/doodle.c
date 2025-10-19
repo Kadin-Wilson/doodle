@@ -22,7 +22,7 @@ static doodle_color *get_pixel(doodle_image *img, uint32_t x, uint32_t y) {
 doodle_image *doodle_new(uint32_t width, uint32_t height, doodle_color background) {
     size_t pixel_count = (size_t)width * height;
 
-    doodle_image *img = malloc(pixel_count + sizeof *img);
+    doodle_image *img = malloc(pixel_count * sizeof *(img->pixels) + sizeof *img);
     if (img == NULL) {
         return NULL;
     }
