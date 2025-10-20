@@ -8,11 +8,11 @@
 #include <stdlib.h>
 
 #include "lua.h"
+#include "lua_helpers.h"
+#include "lua_point.h"
 #include "doodle/doodle.h"
 
 #define READER_BUF_SIZE 2048
-
-static const char *not_provided = "failed to provide a value for %s";
 
 typedef enum {
     RECTANGLE_DRAW,
@@ -51,30 +51,6 @@ typedef struct {
     char buf[READER_BUF_SIZE];
 } file_read_data;
 
-static void dumpstack(lua_State *L) {
-    int top=lua_gettop(L);
-    for (int i=1; i <= top; i++) {
-        printf("%d\t%s\t", i, luaL_typename(L,i));
-        switch (lua_type(L, i)) {
-        case LUA_TNUMBER:
-            printf("%g\n",lua_tonumber(L,i));
-            break;
-        case LUA_TSTRING:
-            printf("%s\n",lua_tostring(L,i));
-            break;
-        case LUA_TBOOLEAN:
-            printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
-            break;
-        case LUA_TNIL:
-            printf("%s\n", "nil");
-            break;
-        default:
-            printf("%p\n",lua_topointer(L,i));
-            break;
-        }
-    }
-}
-
 static const char *read_file(lua_State *L, void *data, size_t *size) {
     file_read_data *f = data;
     if (feof(f->in) || ferror(f->in)) {
@@ -102,16 +78,6 @@ static void error_required_field(lua_State *L, const char *key, int type) {
     exit(EXIT_FAILURE);
 }
 
-static bool has_metatable(lua_State *L, const char *name) {
-    if (!lua_getmetatable(L, -1)) {
-        return false;
-    }
-    luaL_getmetatable(L, name);
-    bool has = lua_rawequal(L, -1, -2);
-    lua_pop(L, 2);
-    return has;
-}
-
 static double get_global_num(lua_State *L, const char *key) {
     lua_getglobal(L, key);
     if (!lua_isnumber(L, -1)) {
@@ -122,62 +88,11 @@ static double get_global_num(lua_State *L, const char *key) {
     return n;
 }
 
-static int create_point(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TTABLE);
-
-    uint32_t x, y;
-    bool setx = false;
-    bool sety = false;
-
-    // coords from array
-    lua_rawgeti(L, 1, 1);
-    if (lua_isnumber(L, -1)) {
-        x = lua_tonumber(L, -1);
-        setx = true;
-    }
-    lua_rawgeti(L, 1, 2);
-    if (lua_isnumber(L, -1)) {
-        y = lua_tonumber(L, -1);
-        sety = true;
-    }
-
-    // coords from table keys
-    lua_getfield(L, 1, "x");
-    if (lua_isnumber(L, -1)) {
-        x = lua_tonumber(L, -1);
-        setx = true;
-    }
-    lua_getfield(L, 1, "y");
-    if (lua_isnumber(L, -1)) {
-        y = lua_tonumber(L, -1);
-        sety = true;
-    }
-
-    lua_pop(L, 4);
-
-    if (!setx) {
-        lua_pushfstring(L, not_provided, "x");
-        lua_error(L);
-    }
-    if (!sety) {
-        lua_pushfstring(L, not_provided, "y");
-        lua_error(L);
-    }
-
-    doodle_point *p = lua_newuserdata(L, sizeof *p);
-    p->x = x;
-    p->y = y;
-    luaL_newmetatable(L, "doodle.point");
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
-
 static int draw_rect(lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
 
     doodle_point origin;
-    uint32_t width, height;
+    double width, height;
     doodle_color color;
     bool setorigin = false;
     bool setwidth = false;
@@ -189,44 +104,28 @@ static int draw_rect(lua_State *L) {
         origin = *(doodle_point*)lua_touserdata(L, -1);
         setorigin = true;
     }
-    lua_rawgeti(L, 1, 2);
-    if (lua_isnumber(L, -1)) {
-        width = lua_tonumber(L, -1);
-        setwidth = true;
-    }
-    lua_rawgeti(L, 1, 3);
-    if (lua_isnumber(L, -1)) {
-        height = lua_tonumber(L, -1);
-        setheight = true;
-    }
+    setwidth = geti_number(L, 2, &width);
+    setheight = geti_number(L, 3, &height);
     lua_rawgeti(L, 1, 4);
     if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
         color = *(doodle_color*)lua_touserdata(L, -1);
         setcolor = true;
     }
-    lua_pop(L, 4);
+    lua_pop(L, 2);
 
     lua_getfield(L, 1, "origin");
     if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.point")) {
         origin = *(doodle_point*)lua_touserdata(L, -1);
         setorigin = true;
     }
-    lua_getfield(L, 1, "width");
-    if (lua_isnumber(L, -1)) {
-        width = lua_tonumber(L, -1);
-        setwidth = true;
-    }
-    lua_getfield(L, 1, "height");
-    if (lua_isnumber(L, -1)) {
-        height = lua_tonumber(L, -1);
-        setheight = true;
-    }
+    setwidth = getf_number(L, "width", &width) || setwidth;
+    setheight = getf_number(L, "height", &height) || setheight;
     lua_getfield(L, 1, "color");
     if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
         color = *(doodle_color*)lua_touserdata(L, -1);
         setcolor = true;
     }
-    lua_pop(L, 4);
+    lua_pop(L, 2);
 
     struct { bool set; char *key; } checks[] = {
         {setorigin, "origin"},
@@ -236,7 +135,7 @@ static int draw_rect(lua_State *L) {
     };
     for (size_t i = 0; i < sizeof(checks) / sizeof *checks; i++) {
         if (!checks[i].set) {
-            lua_pushfstring(L, not_provided, checks[i].key);
+            lua_pushfstring(L, NOT_PROVIDED, "rectangle", checks[i].key);
             lua_error(L);
         }
     }
@@ -267,7 +166,7 @@ static int draw_circle(lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
 
     doodle_point origin;
-    uint32_t radius;
+    double radius;
     doodle_color color;
     bool setorigin = false;
     bool setradius = false;
@@ -278,34 +177,26 @@ static int draw_circle(lua_State *L) {
         origin = *(doodle_point*)lua_touserdata(L, -1);
         setorigin = true;
     }
-    lua_rawgeti(L, 1, 2);
-    if (lua_isnumber(L, -1)) {
-        radius = lua_tonumber(L, -1);
-        setradius = true;
-    }
+    setradius = geti_number(L, 2, &radius);
     lua_rawgeti(L, 1, 3);
     if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
         color = *(doodle_color*)lua_touserdata(L, -1);
         setcolor = true;
     }
-    lua_pop(L, 3);
+    lua_pop(L, 2);
 
     lua_getfield(L, 1, "origin");
     if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.point")) {
         origin = *(doodle_point*)lua_touserdata(L, -1);
         setorigin = true;
     }
-    lua_getfield(L, 1, "radius");
-    if (lua_isnumber(L, -1)) {
-        radius = lua_tonumber(L, -1);
-        setradius = true;
-    }
+    setradius = getf_number(L, "radius", &radius) || setradius;
     lua_getfield(L, 1, "color");
     if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
         color = *(doodle_color*)lua_touserdata(L, -1);
         setcolor = true;
     }
-    lua_pop(L, 3);
+    lua_pop(L, 2);
 
     struct { bool set; char *key; } checks[] = {
         {setorigin, "origin"},
@@ -314,7 +205,7 @@ static int draw_circle(lua_State *L) {
     };
     for (size_t i = 0; i < sizeof(checks) / sizeof *checks; i++) {
         if (!checks[i].set) {
-            lua_pushfstring(L, not_provided, checks[i].key);
+            lua_pushfstring(L, NOT_PROVIDED, "circle", checks[i].key);
             lua_error(L);
         }
     }

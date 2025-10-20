@@ -4,15 +4,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "point.h"
+
 typedef struct doodle_image doodle_image;
 
 typedef struct {
     uint8_t r, g, b, a;
 } doodle_color;
-
-typedef struct {
-    int64_t x, y;
-} doodle_point;
 
 doodle_image *doodle_new(uint32_t width, uint32_t height, doodle_color background);
 
