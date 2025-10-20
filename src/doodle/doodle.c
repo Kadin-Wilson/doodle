@@ -7,7 +7,6 @@
 
 #include "doodle.h"
 
-#define DELTA 0.0001
 #define DIFF(a, b) fmax(fdim((a), (b)), fdim((b), (a)))
 
 struct doodle_image {
@@ -55,8 +54,8 @@ void doodle_draw_rect(
         orig.y = 0;
     }
 
-    for (uint32_t x = orig.x; x < img->width && x < width; x++) {
-        for (uint32_t y = orig.y; y < img->height && y < height; y++) {
+    for (uint32_t x = orig.x; x < img->width && x - orig.x <= width; x++) {
+        for (uint32_t y = orig.y; y < img->height && y - orig.y <= height; y++) {
             *get_pixel(img, x, y) = color;
         }
     }
@@ -88,8 +87,7 @@ void doodle_draw_circle(
 
     for (uint32_t x = startx; x <= endx; x++) {
         for (uint32_t y = starty; y <= endy; y++) {
-            double h = hypot(DIFF(x, orig.x), DIFF(y, orig.y));
-            if (DIFF(h, radius) <= DELTA) {
+            if (hypot(DIFF(x, orig.x), DIFF(y, orig.y)) <= (double)radius) {
                 *get_pixel(img, x, y) = color;
             }
         }
