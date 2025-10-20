@@ -1,5 +1,4 @@
 #include <math.h>
-#include <stdint.h>
 
 #include "point.h"
 
@@ -17,7 +16,7 @@ doodle_point doodle_point_subtract(doodle_point p1, doodle_point p2) {
     };
 }
 
-doodle_point doodle_point_scale(doodle_point p1, int64_t factor) {
+doodle_point doodle_point_scale(doodle_point p1, double factor) {
     return (doodle_point) {
         .x = p1.x * factor,
         .y = p1.y * factor
@@ -27,10 +26,10 @@ doodle_point doodle_point_scale(doodle_point p1, int64_t factor) {
 doodle_point doodle_point_polar_offset(
     doodle_point p1, 
     double radians, 
-    uint32_t offset
+    double offset
 ) {
     return (doodle_point) {
-        .x = (double)offset * cos(radians) + p1.x,
-        .y = (double)offset * sin(radians) + p1.y
+        .x = offset * cos(radians) + p1.x,
+        .y = offset * sin(radians) + p1.y
     };
 }

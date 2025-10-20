@@ -67,21 +67,21 @@ void doodle_draw_circle(
     uint32_t radius,
     doodle_color color
 ) {
-    int64_t srad = radius;
+    double drad = radius;
 
     // if circle doesn't overlap with image do nothing
-    if (orig.x < 0 && orig.x + srad < 0) return;
-    if (orig.y < 0 && orig.y + srad < 0) return;
-    if (orig.y > 0 && orig.y - srad >= (int64_t)img->height) return;
-    if (orig.x > 0 && orig.x - srad >= (int64_t)img->width) return;
+    if (orig.x < 0 && orig.x + drad < 0) return;
+    if (orig.y < 0 && orig.y + drad < 0) return;
+    if (orig.y > 0 && orig.y - drad >= (int64_t)img->height) return;
+    if (orig.x > 0 && orig.x - drad >= (int64_t)img->width) return;
 
     // don't start before image
-    uint32_t startx = orig.x > 0 && orig.x > radius ? orig.x - radius : 0;
-    uint32_t starty = orig.y > 0 && orig.y > radius ? orig.y - radius : 0;
+    uint32_t startx = orig.x > 0 && orig.x > drad ? (double)orig.x - radius : 0;
+    uint32_t starty = orig.y > 0 && orig.y > drad ? (double)orig.y - radius : 0;
 
     // don't go past end of image
-    uint32_t endx = orig.x + srad;
-    uint32_t endy = orig.y + srad;
+    uint32_t endx = (double)orig.x + drad;
+    uint32_t endy = (double)orig.y + drad;
     endx = endx < img->width ? endx : img->width - 1;
     endy = endy < img->height ? endy : img->height - 1;
 

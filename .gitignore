@@ -1,6 +1,8 @@
 *.lua
 .clang-format
 compile_commands.json
+.luarc.json
+debug/
 build/
 libs/
 .cache/

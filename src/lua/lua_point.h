@@ -7,5 +7,10 @@
 
 int create_point(lua_State *L);
 
+int add_points(lua_State *L);
+int subtract_points(lua_State *L);
+int scale_point(lua_State *L);
+int polar_offset_point(lua_State *L);
+
 #endif
 

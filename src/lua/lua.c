@@ -217,6 +217,7 @@ static lua_State *setup_state(draw_queue **queue) {
     }
 
     luaopen_math(L);
+    luaopen_base(L);
 
     struct {
         const char *name;

@@ -7,6 +7,11 @@ OBJ = doodle doodle_point lua lua_helpers lua_point
 BIN = doodle
 DIR = build
 
+ifeq ($(debug), true)
+	DIR = debug
+	FLAGS += -g
+endif
+
 $(DIR)/$(BIN): src/lua/main.c $(foreach OB,$(OBJ),$(DIR)/$(OB).o)
 	$(CC) $(FLAGS) $^ -o $@ $(LINK_FLAGS)
 
