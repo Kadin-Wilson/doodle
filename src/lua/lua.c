@@ -91,41 +91,21 @@ static double get_global_num(lua_State *L, const char *key) {
 static int draw_rect(lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    doodle_point origin;
+    doodle_point *origin;
     double width, height;
-    doodle_color color;
-    bool setorigin = false;
-    bool setwidth = false;
-    bool setheight = false;
-    bool setcolor = false;
+    doodle_color *color;
 
-    lua_rawgeti(L, 1, 1);
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.point")) {
-        origin = *(doodle_point*)lua_touserdata(L, -1);
-        setorigin = true;
-    }
-    setwidth = geti_number(L, 2, &width);
-    setheight = geti_number(L, 3, &height);
-    lua_rawgeti(L, 1, 4);
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
-        color = *(doodle_color*)lua_touserdata(L, -1);
-        setcolor = true;
-    }
-    lua_pop(L, 2);
+    bool setorigin = geti_userdata(L, 1, "doodle.point", (void**)&origin);
+    bool setwidth = geti_number(L, 2, &width);
+    bool setheight = geti_number(L, 3, &height);
+    bool setcolor = geti_userdata(L, 4, "doodle.color", (void**)&color);
 
-    lua_getfield(L, 1, "origin");
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.point")) {
-        origin = *(doodle_point*)lua_touserdata(L, -1);
-        setorigin = true;
-    }
+    setorigin = 
+        getf_userdata(L, "origin", "doodle.point", (void**)&origin) || setorigin;
     setwidth = getf_number(L, "width", &width) || setwidth;
     setheight = getf_number(L, "height", &height) || setheight;
-    lua_getfield(L, 1, "color");
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
-        color = *(doodle_color*)lua_touserdata(L, -1);
-        setcolor = true;
-    }
-    lua_pop(L, 2);
+    setcolor = 
+        getf_userdata(L, "color", "doodle.color", (void**)&color) || setcolor;
 
     struct { bool set; char *key; } checks[] = {
         {setorigin, "origin"},
@@ -143,10 +123,10 @@ static int draw_rect(lua_State *L) {
     draw *d = malloc(sizeof *d);
     d->type = RECTANGLE_DRAW;
     d->next = NULL;
-    d->params.rect.origin = origin;
+    d->params.rect.origin = *origin;
     d->params.rect.width = width;
     d->params.rect.height = height;
-    d->params.rect.color = color;
+    d->params.rect.color = *color;
 
     lua_getfield(L, LUA_ENVIRONINDEX, "draw_queue");
     draw_queue *queue = lua_touserdata(L, -1);
@@ -165,38 +145,19 @@ static int draw_rect(lua_State *L) {
 static int draw_circle(lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    doodle_point origin;
+    doodle_point *origin;
     double radius;
-    doodle_color color;
-    bool setorigin = false;
-    bool setradius = false;
-    bool setcolor = false;
+    doodle_color *color;
 
-    lua_rawgeti(L, 1, 1);
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.point")) {
-        origin = *(doodle_point*)lua_touserdata(L, -1);
-        setorigin = true;
-    }
-    setradius = geti_number(L, 2, &radius);
-    lua_rawgeti(L, 1, 3);
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
-        color = *(doodle_color*)lua_touserdata(L, -1);
-        setcolor = true;
-    }
-    lua_pop(L, 2);
+    bool setorigin = geti_userdata(L, 1, "doodle.point", (void**)&origin);
+    bool setradius = geti_number(L, 2, &radius);
+    bool setcolor = geti_userdata(L, 3, "doodle.color", (void**)&color);
 
-    lua_getfield(L, 1, "origin");
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.point")) {
-        origin = *(doodle_point*)lua_touserdata(L, -1);
-        setorigin = true;
-    }
+    setorigin = 
+        getf_userdata(L, "origin", "doodle.point", (void**)&origin) || setorigin;
     setradius = getf_number(L, "radius", &radius) || setradius;
-    lua_getfield(L, 1, "color");
-    if (lua_isuserdata(L, -1) && has_metatable(L, "doodle.color")) {
-        color = *(doodle_color*)lua_touserdata(L, -1);
-        setcolor = true;
-    }
-    lua_pop(L, 2);
+    setcolor = 
+        getf_userdata(L, "color", "doodle.color", (void**)&color) || setcolor;
 
     struct { bool set; char *key; } checks[] = {
         {setorigin, "origin"},
@@ -213,9 +174,9 @@ static int draw_circle(lua_State *L) {
     draw *d = malloc(sizeof *d);
     d->type = CIRCLE_DRAW;
     d->next = NULL;
-    d->params.circle.origin = origin;
+    d->params.circle.origin = *origin;
     d->params.circle.radius = radius;
-    d->params.circle.color = color;
+    d->params.circle.color = *color;
 
     lua_getfield(L, LUA_ENVIRONINDEX, "draw_queue");
     draw_queue *queue = lua_touserdata(L, -1);

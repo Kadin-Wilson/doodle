@@ -53,6 +53,28 @@ bool getf_number(lua_State *L, const char *key, double *n) {
     return false;
 }
 
+bool geti_userdata(lua_State *L, int i, const char *name, void **data) {
+    lua_rawgeti(L, 1, i);
+    if (lua_isuserdata(L, -1) && has_metatable(L, name)) {
+        *data = lua_touserdata(L, -1);
+        lua_pop(L, 1);
+        return true;
+    }
+    lua_pop(L, 1);
+    return false;
+}
+
+bool getf_userdata(lua_State *L, const char *key, const char *name, void **data) {
+    lua_getfield(L, 1, key);
+    if (lua_isuserdata(L, -1) && has_metatable(L, name)) {
+        *data = lua_touserdata(L, -1);
+        lua_pop(L, 1);
+        return true;
+    }
+    lua_pop(L, 1);
+    return false;
+}
+
 bool has_metatable(lua_State *L, const char *name) {
     if (!lua_getmetatable(L, -1)) {
         return false;

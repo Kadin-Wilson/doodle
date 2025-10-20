@@ -14,5 +14,7 @@ bool has_metatable(lua_State *L, const char *name);
 
 bool getf_number(lua_State *L, const char *key, double *n);
 bool geti_number(lua_State *L, int i, double *n);
+bool geti_userdata(lua_State *L, int i, const char *name, void **data);
+bool getf_userdata(lua_State *L, const char *key, const char *name, void **data);
 
 #endif
