@@ -51,6 +51,19 @@ typedef struct {
     char buf[READER_BUF_SIZE];
 } file_read_data;
 
+static void env_draw_queue_push(lua_State *L, draw *d) {
+    lua_getfield(L, LUA_ENVIRONINDEX, "draw_queue");
+    draw_queue *queue = lua_touserdata(L, -1);
+
+    if (queue->root == NULL) {
+        queue->root = d;
+        queue->tail = d;
+    } else {
+        queue->tail->next = d;
+        queue->tail = d;
+    }
+}
+
 static const char *read_file(lua_State *L, void *data, size_t *size) {
     file_read_data *f = data;
     if (feof(f->in) || ferror(f->in)) {
@@ -127,17 +140,7 @@ static int draw_rect(lua_State *L) {
     d->params.rect.width = width;
     d->params.rect.height = height;
     d->params.rect.color = *color;
-
-    lua_getfield(L, LUA_ENVIRONINDEX, "draw_queue");
-    draw_queue *queue = lua_touserdata(L, -1);
-
-    if (queue->root == NULL) {
-        queue->root = d;
-        queue->tail = d;
-    } else {
-        queue->tail->next = d;
-        queue->tail = d;
-    }
+    env_draw_queue_push(L, d);
 
     return 0;
 }
@@ -177,17 +180,7 @@ static int draw_circle(lua_State *L) {
     d->params.circle.origin = *origin;
     d->params.circle.radius = radius;
     d->params.circle.color = *color;
-
-    lua_getfield(L, LUA_ENVIRONINDEX, "draw_queue");
-    draw_queue *queue = lua_touserdata(L, -1);
-
-    if (queue->root == NULL) {
-        queue->root = d;
-        queue->tail = d;
-    } else {
-        queue->tail->next = d;
-        queue->tail = d;
-    }
+    env_draw_queue_push(L, d);
 
     return 0;
 }
