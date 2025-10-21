@@ -87,7 +87,7 @@ void doodle_draw_circle(
 
     for (uint32_t x = startx; x <= endx; x++) {
         for (uint32_t y = starty; y <= endy; y++) {
-            if (hypot(DIFF(x, orig.x), DIFF(y, orig.y)) <= (double)radius) {
+            if (hypot(DIFF(x, orig.x), DIFF(y, orig.y)) < drad + 1) {
                 *get_pixel(img, x, y) = color;
             }
         }
