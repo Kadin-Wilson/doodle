@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    doodle_export_ppm(img, stdout);
+    doodle_export_png(img, stdout);
 
     free(img);
     fclose(in);

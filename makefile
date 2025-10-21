@@ -1,6 +1,6 @@
 CC = gcc
 INCLUDE = src 
-LINK = m luajit-5.1
+LINK = m luajit-5.1 png
 FLAGS = -std=c99 $(foreach INC,$(INCLUDE),-I$(INC))
 LINK_FLAGS = $(foreach INC,$(LINK),-l$(INC))
 OBJ = doodle doodle_point lua lua_helpers lua_point

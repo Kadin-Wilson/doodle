@@ -30,5 +30,6 @@ void doodle_draw_circle(
 );
 
 void doodle_export_ppm(doodle_image *img, FILE *out);
+void doodle_export_png(doodle_image *img, FILE *out);
 
 #endif
