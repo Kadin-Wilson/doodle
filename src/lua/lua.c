@@ -253,7 +253,7 @@ static lua_State *setup_state(draw_queue **queue) {
     return L;
 }
 
-bool run_file(FILE *in) {
+doodle_image *run_file(FILE *in) {
     file_read_data f = { .in = in };
 
     draw_queue *queue;
@@ -261,19 +261,19 @@ bool run_file(FILE *in) {
     lua_State *L = setup_state(&queue);
     if (L == NULL) {
         fputs("failed to intialize lua", stderr);
-        return false;
+        return NULL;
     }
 
     if (lua_load(L, read_file, &f, "doodle input") != 0) {
         fprintf(stderr, "Error loading script: %s\n", lua_tostring(L, -1));
         lua_close(L);
-        return false;
+        return NULL;
     }
 
     if (lua_pcall(L, 0, 0, 0) != 0) {
         fprintf(stderr, "Error running script: %s\n", lua_tostring(L, -1));
         lua_close(L);
-        return false;
+        return NULL;
     }
 
     uint32_t width = get_global_num(L, "width");
@@ -282,11 +282,14 @@ bool run_file(FILE *in) {
     lua_getglobal(L, "background");
     if (!lua_isuserdata(L, -1) || !has_metatable(L, "doodle.color")) {
         fputs("background must be set to a color\n", stderr);
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     doodle_color *color = lua_touserdata(L, -1);
 
     doodle_image *img = doodle_new(width, height, *color);
+    if (img == NULL) {
+        return NULL;
+    }
 
     for (draw *d = queue->root; d != NULL;) {
         switch (d->type) {
@@ -315,11 +318,8 @@ bool run_file(FILE *in) {
     queue->root = NULL;
     queue->tail = NULL;
 
-    doodle_export_ppm(img, stdout);
-
-    free(img);
     lua_close(L);
 
-    return true;
+    return img;
 }
 

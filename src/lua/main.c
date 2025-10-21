@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "lua.h"
+#include "doodle/doodle.h"
 
 int main(int argc, char **argv) {
     FILE *in;
@@ -24,8 +25,15 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    run_file(in);
+    doodle_image *img = run_file(in);
+    if (img == NULL) {
+        fputs("failed to create image\n", stderr);
+        return EXIT_FAILURE;
+    }
 
+    doodle_export_ppm(img, stdout);
+
+    free(img);
     fclose(in);
 
     return EXIT_SUCCESS;
