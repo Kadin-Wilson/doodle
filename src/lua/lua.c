@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "lua.h"
 #include "lua_helpers.h"
@@ -64,6 +65,13 @@ static void env_draw_queue_push(lua_State *L, draw *d) {
     }
 }
 
+static doodle_lua_error *new_error(doodle_lua_error_type et, const char *msg) {
+    doodle_lua_error *err = malloc(strlen(msg) + 1 + sizeof *err);
+    err->et = et;
+    strcpy(err->msg, msg);
+    return err;
+}
+
 static const char *read_file(lua_State *L, void *data, size_t *size) {
     file_read_data *f = data;
     if (feof(f->in) || ferror(f->in)) {
@@ -81,24 +89,63 @@ static const char *read_file(lua_State *L, void *data, size_t *size) {
     return f->buf;
 }
 
-static void error_required_field(lua_State *L, const char *key, int type) {
-    if (type == LUA_TNIL) {
-        fprintf(stderr, "error: %s needs to be set\n", key);
-    } else {
-        fprintf(stderr, "error: %s cannot be a %s\n", 
-                        key, lua_typename(L, type));
+static doodle_lua_error *get_global_u32(
+    lua_State *L, 
+    const char *key, 
+    uint32_t *n
+) {
+    static const char *required = "%s is a required field";
+    static const char *bad_type = "%s must be a positive integer";
+
+    lua_getglobal(L, key);
+    if (lua_isnil(L, -1)) {
+        char *msg = malloc(strlen(required) + strlen(key));
+        sprintf(msg, required, key);
+        doodle_lua_error *err = new_error(DOODLE_LERR_UNSET_GLOBAL, msg);
+        free(msg);
+        return err;
     }
-    exit(EXIT_FAILURE);
+    if (!lua_isnumber(L, -1) || lua_tonumber(L, -1) < 1) {
+        char *msg = malloc(strlen(bad_type) + strlen(key));
+        sprintf(msg, bad_type, key);
+        doodle_lua_error *err = new_error(DOODLE_LERR_BAD_GLOBAL_TYPE, msg);
+        free(msg);
+        return err;
+    }
+
+    *n = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    return NULL;
 }
 
-static double get_global_num(lua_State *L, const char *key) {
+static doodle_lua_error *get_global_userdata(
+    lua_State *L, 
+    const char *key, 
+    const char *mt_name,
+    void **data
+) {
+    static const char *required = "%s is a required field";
+    static const char *bad_type = "%s must be a %s";
+
     lua_getglobal(L, key);
-    if (!lua_isnumber(L, -1)) {
-        error_required_field(L, key, lua_type(L, -1));
+    if (lua_isnil(L, -1)) {
+        char *msg = malloc(strlen(required) + strlen(key));
+        sprintf(msg, required, key);
+        doodle_lua_error *err = new_error(DOODLE_LERR_UNSET_GLOBAL, msg);
+        free(msg);
+        return err;
     }
-    double n = lua_tonumber(L, -1);
+    if (!lua_isuserdata(L, -1) || !has_metatable(L, mt_name)) {
+        char *msg = malloc(strlen(bad_type) + strlen(key) + strlen(mt_name));
+        sprintf(msg, bad_type, key, mt_name);
+        doodle_lua_error *err = new_error(DOODLE_LERR_BAD_GLOBAL_TYPE, msg);
+        free(msg);
+        return err;
+    }
+
+    *data = lua_touserdata(L, -1);
     lua_pop(L, 1);
-    return n;
+    return NULL;
 }
 
 static int draw_rect(lua_State *L) {
@@ -253,49 +300,58 @@ static lua_State *setup_state(draw_queue **queue) {
     return L;
 }
 
-doodle_image *run_file(FILE *in) {
+doodle_lua_error *doodle_lua_run_file(
+    FILE *in, 
+    doodle_image **img, 
+    doodle_config *conf
+) {
     file_read_data f = { .in = in };
 
     draw_queue *queue;
 
+    doodle_lua_error *err = NULL;
+
     lua_State *L = setup_state(&queue);
     if (L == NULL) {
-        fputs("failed to intialize lua", stderr);
-        return NULL;
+        return new_error(DOODLE_LERR_INIT_FAIL, "lua setup failed");
     }
 
-    if (lua_load(L, read_file, &f, "doodle input") != 0) {
-        fprintf(stderr, "Error loading script: %s\n", lua_tostring(L, -1));
-        lua_close(L);
-        return NULL;
+    if (lua_load(L, read_file, &f, "doodle script") != 0) {
+        err = new_error( DOODLE_LERR_LOAD_FAIL, lua_tostring(L, -1));
+        goto run_lua_close_exit;
     }
 
     if (lua_pcall(L, 0, 0, 0) != 0) {
-        fprintf(stderr, "Error running script: %s\n", lua_tostring(L, -1));
+        err = new_error( DOODLE_LERR_RUN_FAIL, lua_tostring(L, -1));
+        goto run_lua_close_exit;
+    }
+
+    doodle_color *background;
+    err = get_global_userdata(L, "background", "doodle.color", (void**)&background);
+    if (err != NULL) goto run_lua_close_exit;
+
+    err = get_global_u32(L, "width", &conf->width);
+    if (err != NULL) goto run_lua_close_exit;
+
+    err = get_global_u32(L, "height", &conf->height);
+    if (err != NULL) goto run_lua_close_exit;
+
+    conf->background = *background;
+
+    *img = doodle_new(conf);
+    if (*img == NULL) {
         lua_close(L);
-        return NULL;
-    }
-
-    uint32_t width = get_global_num(L, "width");
-    uint32_t height = get_global_num(L, "height");
-
-    lua_getglobal(L, "background");
-    if (!lua_isuserdata(L, -1) || !has_metatable(L, "doodle.color")) {
-        fputs("background must be set to a color\n", stderr);
-        return NULL;
-    }
-    doodle_color *color = lua_touserdata(L, -1);
-
-    doodle_image *img = doodle_new(width, height, *color);
-    if (img == NULL) {
-        return NULL;
+        return new_error(
+            DOODLE_LERR_IMG_N_FAIL,
+            "image creation failed"
+        );
     }
 
     for (draw *d = queue->root; d != NULL;) {
         switch (d->type) {
         case RECTANGLE_DRAW:
             doodle_draw_rect(
-                img, 
+                *img, 
                 d->params.rect.origin, 
                 d->params.rect.width,
                 d->params.rect.height,
@@ -304,7 +360,7 @@ doodle_image *run_file(FILE *in) {
             break;
         case CIRCLE_DRAW:
             doodle_draw_circle(
-                img,
+                *img,
                 d->params.circle.origin,
                 d->params.circle.radius,
                 d->params.circle.color
@@ -318,8 +374,9 @@ doodle_image *run_file(FILE *in) {
     queue->root = NULL;
     queue->tail = NULL;
 
+run_lua_close_exit:
     lua_close(L);
 
-    return img;
+    return err;
 }
 

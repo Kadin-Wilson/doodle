@@ -6,8 +6,24 @@
 
 #include "doodle/doodle.h"
 
-#define MAX_FILE_BYTES 10000
+typedef enum {
+    DOODLE_LERR_UNSET_GLOBAL,
+    DOODLE_LERR_BAD_GLOBAL_TYPE,
+    DOODLE_LERR_INIT_FAIL,
+    DOODLE_LERR_LOAD_FAIL,
+    DOODLE_LERR_RUN_FAIL,
+    DOODLE_LERR_IMG_N_FAIL,
+} doodle_lua_error_type;
 
-doodle_image *run_file(FILE *in);
+typedef struct {
+    doodle_lua_error_type et;
+    char msg[];
+} doodle_lua_error;
+
+doodle_lua_error *doodle_lua_run_file(
+    FILE *in, 
+    doodle_image **img, 
+    doodle_config *conf
+);
 
 #endif

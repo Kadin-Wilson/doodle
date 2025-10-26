@@ -29,19 +29,19 @@ static void set_pixel(doodle_image *img, uint32_t x, uint32_t y, doodle_color c)
     copy_color(img->pixels + img->width * y * PIXEL_SIZE + x * PIXEL_SIZE, c);
 }
 
-doodle_image *doodle_new(uint32_t width, uint32_t height, doodle_color background) {
-    size_t pixel_count = (size_t)width * height;
+doodle_image *doodle_new(doodle_config *conf) {
+    size_t pixel_count = (size_t)conf->width * conf->height;
 
     doodle_image *img = malloc(pixel_count * PIXEL_SIZE + sizeof *img);
     if (img == NULL) {
         return NULL;
     }
 
-    img->width = width;
-    img->height = height;
+    img->width = conf->width;
+    img->height = conf->height;
 
     for (size_t i = 0; i < pixel_count; i++) {
-        copy_color(img->pixels + i * PIXEL_SIZE, background);
+        copy_color(img->pixels + i * PIXEL_SIZE, conf->background);
     }
 
     return img;
@@ -102,6 +102,17 @@ void doodle_draw_circle(
                 set_pixel(img, x, y, color);
             }
         }
+    }
+}
+
+void doodle_export(doodle_image *img, doodle_config *conf, FILE *out) {
+    switch (conf->ft) {
+    case DOODLE_FT_PPM:
+        doodle_export_ppm(img, out);
+        return;
+    case DOODLE_FT_PNG:
+        doodle_export_png(img, out);
+        return;
     }
 }
 

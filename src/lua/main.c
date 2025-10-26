@@ -25,13 +25,17 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    doodle_image *img = run_file(in);
-    if (img == NULL) {
-        fputs("failed to create image\n", stderr);
+    doodle_image *img;
+    doodle_config conf = {
+        .ft = DOODLE_FT_PNG,
+    };
+    doodle_lua_error *err = doodle_lua_run_file(in, &img, &conf);
+    if (err != NULL) {
+        fprintf(stderr, "failed to create image: %s\n", err->msg);
         return EXIT_FAILURE;
     }
 
-    doodle_export_png(img, stdout);
+    doodle_export(img, &conf, stdout);
 
     free(img);
     fclose(in);
