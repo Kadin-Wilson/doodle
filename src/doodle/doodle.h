@@ -1,6 +1,7 @@
 #ifndef DOODLE_H
 #define DOODLE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -41,9 +42,9 @@ void doodle_draw_circle(
     doodle_color color
 );
 
-void doodle_export_ppm(doodle_image *img, FILE *out);
-void doodle_export_png(doodle_image *img, FILE *out);
+bool doodle_export_ppm(doodle_image *img, FILE *out);
+bool doodle_export_png(doodle_image *img, FILE *out);
 
-void doodle_export(doodle_image *img, doodle_config *conf, FILE *out);
+bool doodle_export(doodle_image *img, doodle_config *conf, FILE *out);
 
 #endif

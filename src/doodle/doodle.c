@@ -105,26 +105,33 @@ void doodle_draw_circle(
     }
 }
 
-void doodle_export(doodle_image *img, doodle_config *conf, FILE *out) {
+bool doodle_export(doodle_image *img, doodle_config *conf, FILE *out) {
     switch (conf->ft) {
-    case DOODLE_FT_PPM:
-        doodle_export_ppm(img, out);
-        return;
-    case DOODLE_FT_PNG:
-        doodle_export_png(img, out);
-        return;
+    case DOODLE_FT_PPM: return doodle_export_ppm(img, out);
+    case DOODLE_FT_PNG: return doodle_export_png(img, out);
     }
 }
 
-void doodle_export_ppm(doodle_image *img, FILE *out) {
-    fprintf(out, "P6\n%"PRId32" %"PRId32"\n255\n", img->width, img->height);
+bool doodle_export_ppm(doodle_image *img, FILE *out) {
+    if (fprintf(
+            out, "P6\n%"PRId32" %"PRId32"\n255\n", 
+            img->width, img->height
+        ) < 0
+    ) {
+        return false;
+    }
 
     for (size_t i = 0; i < img->width * img->height; i ++) {
         fwrite(img->pixels + i * PIXEL_SIZE, 3, 1, out);
+        if (ferror(out)) {
+            return false;
+        }
     }
+
+    return true;
 }
 
-void doodle_export_png(doodle_image *img, FILE *out) {
+bool doodle_export_png(doodle_image *img, FILE *out) {
     uint8_t **pixel_rows = malloc(img->height * sizeof *pixel_rows);
     for (size_t i = 0; i < img->height; i++) {
         pixel_rows[i] = img->pixels + i * img->width * PIXEL_SIZE;
@@ -133,18 +140,12 @@ void doodle_export_png(doodle_image *img, FILE *out) {
     png_structp png_p = png_create_write_struct(
         PNG_LIBPNG_VER_STRING, NULL, NULL, NULL
     );
-    if (png_p == NULL) {
-        goto png_p_error;
-    }
+    if (png_p == NULL) goto png_p_error;
 
     png_infop info_p = png_create_info_struct(png_p);
-    if (info_p == NULL) {
-        goto info_p_error;
-    }
+    if (info_p == NULL) goto info_p_error;
 
-    if (setjmp(png_jmpbuf(png_p))) {
-        goto png_error;
-    }
+    if (setjmp(png_jmpbuf(png_p))) goto png_error;
 
     png_init_io(png_p, out);
 
@@ -162,14 +163,16 @@ void doodle_export_png(doodle_image *img, FILE *out) {
     png_write_image(png_p, pixel_rows);
     png_write_end(png_p, NULL);
 
+    free(pixel_rows);
     png_destroy_write_struct(&png_p, &info_p);
 
-    return;
+    return true;
 
 png_error:
     png_destroy_write_struct(NULL, &info_p);
 info_p_error:
     png_destroy_write_struct(&png_p, NULL);
 png_p_error:
-    fputs("failed to create png image\n", stderr);
+    free(pixel_rows);
+    return false;
 }
