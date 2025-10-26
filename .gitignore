@@ -1,4 +1,4 @@
-*.lua
+/*.lua
 .clang-format
 compile_commands.json
 .luarc.json
