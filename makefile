@@ -34,4 +34,4 @@ $(DIR):
 	mkdir -p $(DIR)
 
 clean:
-	rm -r $(DIR)
+	rm -rf build debug
