@@ -41,10 +41,28 @@ function circle_circle(origin, offset, radius, count)
     end
 end
 
-border(width / 9)
+function star(origin, radius)
+    local angle = -math.pi / 2
+    for _ = 1, 5 do
+        local nangle = angle + math.pi * 4 / 5
+        line {
+            origin:polar_offset(angle, radius),
+            origin:polar_offset(nangle, radius),
+            height / 100,
+            RED,
+        }
+        angle = nangle
+    end
+end
+
+border(height / 10)
 
 rectangle { point { 10, 10 }, 20, 20, RED }
 
 center = point { width / 2, height / 2 }
-circle { center, 150, GREEN }
-circle_circle(center, 250, 50, 10)
+circle { center, height / 8, GREEN }
+circle_circle(center, height / 4, height / 20, 10)
+
+for i = 1, 12 do
+    star(center:polar_offset(i * 2 * math.pi / 12, height / 2.5), height / 20)
+end

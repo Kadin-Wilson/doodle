@@ -9,6 +9,10 @@
 
 #include "doodle.h"
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433832
+#endif
+
 #define DIFF(a, b) fmax(fdim((a), (b)), fdim((b), (a)))
 
 #define PIXEL_SIZE 4
@@ -99,6 +103,62 @@ void doodle_draw_circle(
     for (uint32_t x = startx; x <= endx; x++) {
         for (uint32_t y = starty; y <= endy; y++) {
             if (hypot(DIFF(x, orig.x), DIFF(y, orig.y)) < drad + 1) {
+                set_pixel(img, x, y, color);
+            }
+        }
+    }
+}
+
+void doodle_draw_line(
+    doodle_image *img,
+    doodle_point p1,
+    doodle_point p2,
+    double thickness,
+    doodle_color color
+) {
+    double dx = p2.x - p1.x;
+    double dy = p2.y - p1.y;
+    double length = hypot(dx, dy);
+    
+    if (length < 1e-10) return;
+    
+    double half_thickness = thickness / 2.0;
+    
+    uint32_t startx = fmax(0, fmin(p1.x, p2.x) - thickness);
+    uint32_t starty = fmax(0, fmin(p1.y, p2.y) - thickness);
+    uint32_t endx = fmin(img->width, fmax(p1.x, p2.x) + thickness + 1);
+    uint32_t endy = fmin(img->height, fmax(p1.y, p2.y) + thickness + 1);
+
+    for (uint32_t x = startx; x < endx; x++) {
+        for (uint32_t y = starty; y < endy; y++) {
+            // Calculate distance from point to line
+            double px = x - p1.x;
+            double py = y - p1.y;
+            
+            double dot = px * dx + py * dy;
+            double proj_x, proj_y;
+            
+            if (dot <= 0) {
+                // Before start point
+                proj_x = p1.x;
+                proj_y = p1.y;
+            } else if (dot >= length * length) {
+                // After end point  
+                proj_x = p2.x;
+                proj_y = p2.y;
+            } else {
+                // Project onto line
+                double t = dot / (length * length);
+                proj_x = p1.x + t * dx;
+                proj_y = p1.y + t * dy;
+            }
+            
+            double dist = sqrt(
+                (x - proj_x) * (x - proj_x)
+              + (y - proj_y) * (y - proj_y)
+            );
+            
+            if (dist <= half_thickness) {
                 set_pixel(img, x, y, color);
             }
         }

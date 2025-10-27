@@ -18,6 +18,7 @@
 typedef enum {
     RECTANGLE_DRAW,
     CIRCLE_DRAW,
+    LINE_DRAW,
 } draw_type;
 
 typedef struct {
@@ -33,12 +34,20 @@ typedef struct {
     doodle_color color;
 } circ_draw;
 
+typedef struct {
+    doodle_point p1;
+    doodle_point p2;
+    double thickness;
+    doodle_color color;
+} line_draw;
+
 typedef struct draw {
     draw_type type;
     struct draw *next;
     union {
         rect_draw rect;
         circ_draw circle;
+        line_draw line;
     } params;
 } draw;
 
@@ -232,11 +241,56 @@ static int draw_circle(lua_State *L) {
     return 0;
 }
 
+static int draw_line(lua_State *L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    doodle_point *p1;
+    doodle_point *p2;
+    double thickness;
+    doodle_color *color;
+
+    bool setp1 = geti_userdata(L, 1, "doodle.point", (void**)&p1);
+    bool setp2 = geti_userdata(L, 2, "doodle.point", (void**)&p2);
+    bool setthickness = geti_number(L, 3, &thickness);
+    bool setcolor = geti_userdata(L, 4, "doodle.color", (void**)&color);
+
+    setp1 = getf_userdata(L, "p1", "doodle.point", (void**)&p1) || setp1;
+    setp2 = getf_userdata(L, "p2", "doodle.point", (void**)&p2) || setp2;
+    setthickness = getf_number(L, "thickness", &thickness) || setthickness;
+    setcolor = 
+        getf_userdata(L, "color", "doodle.color", (void**)&color) || setcolor;
+
+    struct { bool set; char *key; } checks[] = {
+        {setp1, "p1"},
+        {setp2, "p2"},
+        {setthickness, "thickness"},
+        {setcolor, "color"},
+    };
+    for (size_t i = 0; i < sizeof(checks) / sizeof *checks; i++) {
+        if (!checks[i].set) {
+            lua_pushfstring(L, NOT_PROVIDED, "line", checks[i].key);
+            lua_error(L);
+        }
+    }
+
+    draw *d = malloc(sizeof *d);
+    d->type = LINE_DRAW;
+    d->next = NULL;
+    d->params.line.p1 = *p1;
+    d->params.line.p2 = *p2;
+    d->params.line.thickness = thickness;
+    d->params.line.color = *color;
+    env_draw_queue_push(L, d);
+
+    return 0;
+}
+
 static int set_global_functions(lua_State *L) {
     luaL_Reg global_functions[] = {
         {"point", create_point},
         {"rectangle", draw_rect},
         {"circle", draw_circle},
+        {"line", draw_line},
         {NULL, NULL}
     };
 
@@ -364,6 +418,15 @@ doodle_lua_error *doodle_lua_run_file(
                 d->params.circle.origin,
                 d->params.circle.radius,
                 d->params.circle.color
+            );
+            break;
+        case LINE_DRAW:
+            doodle_draw_line(
+                *img,
+                d->params.line.p1,
+                d->params.line.p2,
+                d->params.line.thickness,
+                d->params.line.color
             );
             break;
         }

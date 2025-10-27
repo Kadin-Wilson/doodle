@@ -42,6 +42,14 @@ void doodle_draw_circle(
     doodle_color color
 );
 
+void doodle_draw_line(
+    doodle_image *img,
+    doodle_point p1,
+    doodle_point p2,
+    double thickness,
+    doodle_color color
+);
+
 bool doodle_export_ppm(doodle_image *img, FILE *out);
 bool doodle_export_png(doodle_image *img, FILE *out);
 
