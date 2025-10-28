@@ -11,6 +11,7 @@
 #include "lua.h"
 #include "lua_helpers.h"
 #include "lua_point.h"
+#include "lua_colors.h"
 #include "doodle/doodle.h"
 
 #define READER_BUF_SIZE 2048
@@ -288,6 +289,7 @@ static int draw_line(lua_State *L) {
 static int set_global_functions(lua_State *L) {
     luaL_Reg global_functions[] = {
         {"point", create_point},
+        {"color", create_color},
         {"rectangle", draw_rect},
         {"circle", draw_circle},
         {"line", draw_line},
@@ -320,27 +322,7 @@ static lua_State *setup_state(draw_queue **queue) {
     luaopen_math(L);
     luaopen_base(L);
 
-    struct {
-        const char *name;
-        doodle_color color;
-    } global_colors[] = {
-        {"RED", {255, 0, 0, 0}},
-        {"GREEN", {0, 255, 0, 0}},
-        {"BLUE", {0, 0, 255, 0}},
-        {"WHITE", {255, 255, 255, 0}},
-        {"BLACK", {0, 0, 0, 0}},
-        {NULL, {}}
-    };
-
-    for (size_t i = 0; global_colors[i].name != NULL; i++) {
-        doodle_color *color = lua_newuserdata(L, sizeof(*color));
-        *color = global_colors[i].color;
-
-        luaL_newmetatable(L, "doodle.color");
-        lua_setmetatable(L, -2);
-
-        lua_setglobal(L, global_colors[i].name);
-    }
+    set_global_colors(L);
 
     lua_getglobal(L, "BLACK");
     lua_setglobal(L, "background");

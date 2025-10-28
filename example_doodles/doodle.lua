@@ -33,11 +33,11 @@ function border(segment_size)
     end
 end
 
-function circle_circle(origin, offset, radius, count)
+function circle_circle(origin, offset, radius, count, color)
     local angle = math.pi * 2 / count
 
     for i = 0, count - 1 do
-        circle { origin:polar_offset(angle * i, offset), radius, BLACK }
+        circle { origin:polar_offset(angle * i, offset), radius, color }
     end
 end
 
@@ -61,7 +61,8 @@ rectangle { point { 10, 10 }, 20, 20, RED }
 
 center = point { width / 2, height / 2 }
 circle { center, height / 8, GREEN }
-circle_circle(center, height / 4, height / 20, 10)
+circle_circle(center, height / 4, height / 20, 10, BLACK)
+circle_circle(center, height / 4, height / 40, 10, color { 255, 127 })
 
 for i = 1, 12 do
     star(center:polar_offset(i * 2 * math.pi / 12, height / 2.5), height / 20)

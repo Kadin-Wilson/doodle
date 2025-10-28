@@ -2,6 +2,7 @@
 #include <luajit-2.1/lauxlib.h>
 #include <luajit-2.1/lualib.h>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -51,6 +52,36 @@ bool getf_number(lua_State *L, const char *key, double *n) {
     }
     lua_pop(L, 1);
     return false;
+}
+
+const char *geti_u8(lua_State *L, int i, uint8_t *n) {
+    double d;
+    if (!geti_number(L, i, &d)) {
+        return "not a number";
+    }
+    if (d > UINT8_MAX) {
+        return "number is too large";
+    }
+    if (d < 0) {
+        return "number is too small";
+    }
+    *n = d;
+    return NULL;
+}
+
+const char *getf_u8(lua_State *L, const char *key, uint8_t *n) {
+    double d;
+    if (!getf_number(L, key, &d)) {
+        return "not a number";
+    }
+    if (d > UINT8_MAX) {
+        return "number is too large";
+    }
+    if (d < 0) {
+        return "number is too small";
+    }
+    *n = d;
+    return NULL;
 }
 
 bool geti_userdata(lua_State *L, int i, const char *name, void **data) {

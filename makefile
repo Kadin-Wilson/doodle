@@ -3,7 +3,7 @@ INCLUDE = src
 LINK = m luajit-5.1 png
 FLAGS = -std=c99 $(foreach INC,$(INCLUDE),-I$(INC))
 LINK_FLAGS = $(foreach INC,$(LINK),-l$(INC))
-OBJ = doodle doodle_point lua lua_helpers lua_point
+OBJ = doodle doodle_point lua lua_helpers lua_point lua_color
 BIN = doodle
 DIR = build
 
@@ -22,6 +22,9 @@ $(DIR)/lua_helpers.o: src/lua/lua_helpers.c src/lua/lua_helpers.h | $(DIR)
 	$(CC) $(FLAGS) $< -c -o $@
 
 $(DIR)/lua_point.o: src/lua/lua_point.c src/lua/lua_point.h | $(DIR)
+	$(CC) $(FLAGS) $< -c -o $@
+
+$(DIR)/lua_color.o: src/lua/lua_color.c src/lua/lua_color.h | $(DIR)
 	$(CC) $(FLAGS) $< -c -o $@
 
 $(DIR)/doodle.o: src/doodle/doodle.c src/doodle/doodle.h | $(DIR)
