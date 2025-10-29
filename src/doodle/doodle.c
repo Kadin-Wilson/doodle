@@ -95,14 +95,14 @@ void doodle_draw_circle(
     uint32_t starty = orig.y > 0 && orig.y > drad ? (double)orig.y - radius : 0;
 
     // don't go past end of image
-    uint32_t endx = (double)orig.x + drad;
-    uint32_t endy = (double)orig.y + drad;
+    uint32_t endx = (double)orig.x + drad + 1;
+    uint32_t endy = (double)orig.y + drad + 1;
     endx = endx < img->width ? endx : img->width - 1;
     endy = endy < img->height ? endy : img->height - 1;
 
     for (uint32_t x = startx; x <= endx; x++) {
         for (uint32_t y = starty; y <= endy; y++) {
-            if (hypot(DIFF(x, orig.x), DIFF(y, orig.y)) < drad + 1) {
+            if (hypot(DIFF(x, orig.x), DIFF(y, orig.y)) < drad + 0.5) {
                 set_pixel(img, x, y, color);
             }
         }
