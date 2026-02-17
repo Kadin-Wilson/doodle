@@ -1,0 +1,28 @@
+{
+  "name": "doodle",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Kadin-Wilson/doodle#readme",
+  "bugs": {
+    "url": "https://github.com/Kadin-Wilson/doodle/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kadin-Wilson/doodle.git"
+  },
+  "license": "ISC",
+  "author": "Kadin Wilson",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "make && tsx ./server/server.ts"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "tsx": "^4.21.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "zod": "^4.3.6"
+  }
+}
