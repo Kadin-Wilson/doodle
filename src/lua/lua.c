@@ -11,7 +11,7 @@
 #include "lua.h"
 #include "lua_helpers.h"
 #include "lua_point.h"
-#include "lua_colors.h"
+#include "lua_color.h"
 #include "doodle/doodle.h"
 
 #define READER_BUF_SIZE 2048
